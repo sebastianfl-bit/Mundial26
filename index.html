@@ -65,6 +65,9 @@
   .tab{flex:1;text-align:center;padding:9px 4px;border-radius:11px;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-weight:600;font-size:13.5px;cursor:pointer;transition:.15s}
   .tab.active{background:var(--grass);border-color:var(--grass);color:#062;box-shadow:0 4px 14px rgba(43,217,107,.25)}
   .row2{display:flex;gap:8px;align-items:center}
+  .row2 .search{min-width:0}
+  .row3{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .row3 .chip{margin-right:auto}
   .search{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:0 12px}
   .search svg{flex:none;opacity:.5}
   .search input{flex:1;background:none;border:none;color:var(--text);font-family:inherit;font-size:14px;padding:10px 0;outline:none}
@@ -201,6 +204,8 @@
         <option>E</option><option>F</option><option>G</option><option>H</option>
         <option>I</option><option>J</option><option>K</option><option>L</option>
       </select>
+    </div>
+    <div class="row3">
       <div class="chip" id="conmebol">🌎 Sudamérica</div>
       <button class="icon-btn" id="refreshBtn" title="Actualizar resultados">
         <svg class="refresh" width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 10-2.3 5.7M20 11V5m0 6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
