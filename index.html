@@ -144,32 +144,11 @@
 
   /* Resultados en vivo: botones y modal */
   .icon-btn{flex:none;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);border-radius:11px;color:var(--muted);cursor:pointer;position:relative}
-  .icon-btn.active{color:var(--grass);border-color:rgba(43,217,107,.4)}
   .icon-btn .ping{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--live);display:none}
   .icon-btn.live-on .ping{display:block;animation:blink 1.4s infinite}
   .refresh{transition:transform .6s}
   .refresh.spin{transform:rotate(360deg)}
 
-  .overlay{position:fixed;inset:0;z-index:80;background:rgba(5,8,16,.72);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center}
-  .overlay.show{display:flex}
-  .sheet{background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:18px 18px 0 0;width:100%;max-width:520px;padding:20px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease}
-  @keyframes up{from{transform:translateY(30px);opacity:.5}to{transform:translateY(0);opacity:1}}
-  .sheet h2{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:26px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
-  .sheet p{color:var(--muted);font-size:13px;line-height:1.55;margin-top:6px}
-  .sheet a{color:var(--grass);font-weight:600}
-  .field{margin-top:15px}
-  .field label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:6px}
-  .field input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;color:var(--text);font-family:inherit;font-size:14px;padding:12px 13px;outline:none}
-  .field input:focus{border-color:var(--grass)}
-  .sheet-actions{display:flex;gap:9px;margin-top:15px}
-  .btn{flex:1;border:none;font-family:inherit;font-weight:700;font-size:14px;padding:13px;border-radius:11px;cursor:pointer}
-  .btn-primary{background:var(--grass);color:#062}
-  .btn-ghost{background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
-  .status{margin-top:13px;font-size:12.5px;padding:10px 12px;border-radius:10px;display:none}
-  .status.ok{display:block;background:rgba(43,217,107,.1);color:#8fe3b0;border:1px solid rgba(43,217,107,.25)}
-  .status.err{display:block;background:rgba(255,59,92,.1);color:#ffadba;border:1px solid rgba(255,59,92,.25)}
-  .status.info{display:block;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
-  .priv{margin-top:13px;font-size:11px;color:var(--faint);line-height:1.5}
 </style>
 </head>
 <body>
@@ -208,11 +187,8 @@
     <div class="row3">
       <div class="chip" id="conmebol">🌎 Sudamérica</div>
       <button class="icon-btn" id="refreshBtn" title="Actualizar resultados">
-        <svg class="refresh" width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 10-2.3 5.7M20 11V5m0 6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <button class="icon-btn" id="cfgBtn" title="Resultados en vivo">
         <span class="ping"></span>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2"/><path d="M19.4 13a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V20a2 2 0 11-4 0v-.09A1.65 1.65 0 008.6 18.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 003.6 8.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H8a1.65 1.65 0 001-1.51V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V8a1.65 1.65 0 001.51 1H22a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="refresh" width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 10-2.3 5.7M20 11V5m0 6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
   </div>
@@ -220,8 +196,8 @@
 
 <div class="wrap" id="list"></div>
 <footer>
-  Datos del fixture oficial FIFA. Los horarios usan la hora continental de Chile (UTC−4).<br>
-  <b>El estado en vivo / finalizado se calcula con la hora de tu dispositivo.</b>
+  Horarios en hora continental de Chile (UTC−4) · Resultados en vivo vía ESPN.<br>
+  <b>Marcadores y estado se actualizan automáticamente durante los partidos.</b>
 </footer>
 
 <div class="ios-banner" id="iosBanner">
@@ -229,26 +205,6 @@
   <p>Para instalar: toca
     <svg class="sq" viewBox="0 0 24 24" fill="none"><path d="M12 3v12M12 3L8 7m4-4l4 4" stroke="#ffce4d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" stroke="#ffce4d" stroke-width="2" stroke-linecap="round"/></svg>
     <b>Compartir</b> y luego <b>“Agregar a inicio”</b>.</p>
-</div>
-
-<div class="overlay" id="overlay">
-  <div class="sheet">
-    <h2>⚽ Resultados en vivo</h2>
-    <p>Conecta una clave gratuita de <a href="https://www.api-football.com/" target="_blank" rel="noopener">API-Football</a> para ver marcadores y minuto en vivo. El plan gratis da 100 consultas por día, suficiente para seguir la jornada.</p>
-    <div class="field">
-      <label for="keyInput">Tu API key</label>
-      <input id="keyInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Pega aquí tu clave de api-sports.io">
-    </div>
-    <div class="sheet-actions">
-      <button class="btn btn-primary" id="keySave">Guardar y conectar</button>
-      <button class="btn btn-ghost" id="keyClear">Quitar</button>
-    </div>
-    <div class="status" id="cfgStatus"></div>
-    <p class="priv">🔒 La clave se guarda solo en este dispositivo (no se envía a ningún servidor salvo a API-Football). Sin clave, la app sigue funcionando con los horarios.</p>
-    <div class="sheet-actions" style="margin-top:16px">
-      <button class="btn btn-ghost" id="cfgClose">Cerrar</button>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -556,59 +512,79 @@ function tick(){
   document.getElementById("clk").textContent =
     new Intl.DateTimeFormat("es-CL",{timeZone:"America/Santiago",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(new Date());
 }
-/* ===================== RESULTADOS EN VIVO (API-Football) ===================== */
-const API_BASE='https://v3.football.api-sports.io';
-const LEAGUE=1, SEASON=2026, DAILY_CAP=95;
+/* ===================== RESULTADOS EN VIVO (ESPN, sin API key) ===================== */
+const ESPN='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 let results={}, scoresTimer=null, fetching=false;
-
-const cfgBtn=document.getElementById('cfgBtn');
 const refreshBtn=document.getElementById('refreshBtn');
-const overlay=document.getElementById('overlay');
 
-/* almacenamiento */
-function getKey(){ try{return localStorage.getItem('apiKey')||'';}catch(e){return '';} }
-function setKey(k){ try{ k?localStorage.setItem('apiKey',k):localStorage.removeItem('apiKey'); }catch(e){} }
-function isoDateCL(d){ return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(d||new Date()); }
-function quota(){ let q; try{q=JSON.parse(localStorage.getItem('apiQuota')||'{}');}catch(e){q={};} const t=isoDateCL(); if(q.date!==t)q={date:t,count:0}; return q; }
-function bumpQuota(){ const q=quota(); q.count++; try{localStorage.setItem('apiQuota',JSON.stringify(q));}catch(e){} return q.count; }
-function saveCache(){ try{localStorage.setItem('apiResults',JSON.stringify({date:isoDateCL(),data:results}));}catch(e){} }
-function loadCache(){ try{const c=JSON.parse(localStorage.getItem('apiResults')||'{}'); if(c.date===isoDateCL()&&c.data) results=c.data;}catch(e){} }
+function loadCache(){ try{const c=JSON.parse(localStorage.getItem('espnResults')||'{}'); if(c.data) results=c.data;}catch(e){} }
+function saveCache(){ try{localStorage.setItem('espnResults',JSON.stringify({t:Date.now(),data:results}));}catch(e){} }
 
-/* traducción de nombres de la API (inglés) a los del fixture */
+/* abreviación FIFA (la que entrega ESPN) -> equipo del fixture */
+const ABBR={MEX:"México",RSA:"Sudáfrica",KOR:"Corea del Sur",CZE:"Rep. Checa",CAN:"Canadá",
+ BIH:"Bosnia y Herzegovina",QAT:"Qatar",SUI:"Suiza",BRA:"Brasil",MAR:"Marruecos",HAI:"Haití",
+ SCO:"Escocia",USA:"Estados Unidos",PAR:"Paraguay",AUS:"Australia",TUR:"Turquía",GER:"Alemania",
+ CUW:"Curazao",CIV:"Costa de Marfil",ECU:"Ecuador",NED:"Países Bajos",JPN:"Japón",SWE:"Suecia",
+ TUN:"Túnez",BEL:"Bélgica",EGY:"Egipto",IRN:"Irán",NZL:"Nueva Zelanda",ESP:"España",CPV:"Cabo Verde",
+ KSA:"Arabia Saudita",URU:"Uruguay",FRA:"Francia",SEN:"Senegal",IRQ:"Irak",NOR:"Noruega",
+ ARG:"Argentina",ALG:"Argelia",AUT:"Austria",JOR:"Jordania",POR:"Portugal",COD:"RD Congo",
+ UZB:"Uzbekistán",COL:"Colombia",ENG:"Inglaterra",CRO:"Croacia",GHA:"Ghana",PAN:"Panamá"};
+
+/* nombres en inglés -> equipo del fixture (respaldo si la abreviación no coincide) */
 const ALIAS={
  "mexico":"México","south africa":"Sudáfrica","south korea":"Corea del Sur","korea republic":"Corea del Sur",
  "czech republic":"Rep. Checa","czechia":"Rep. Checa","canada":"Canadá","bosnia and herzegovina":"Bosnia y Herzegovina",
- "qatar":"Qatar","switzerland":"Suiza","brazil":"Brasil","morocco":"Marruecos","haiti":"Haití","scotland":"Escocia",
- "usa":"Estados Unidos","united states":"Estados Unidos","paraguay":"Paraguay","australia":"Australia",
- "turkey":"Turquía","turkiye":"Turquía","germany":"Alemania","curacao":"Curazao",
- "ivory coast":"Costa de Marfil","cote divoire":"Costa de Marfil","ecuador":"Ecuador",
- "netherlands":"Países Bajos","japan":"Japón","sweden":"Suecia","tunisia":"Túnez","belgium":"Bélgica","egypt":"Egipto",
- "iran":"Irán","new zealand":"Nueva Zelanda","spain":"España","cape verde":"Cabo Verde","cabo verde":"Cabo Verde",
+ "bosnia herzegovina":"Bosnia y Herzegovina","qatar":"Qatar","switzerland":"Suiza","brazil":"Brasil","morocco":"Marruecos",
+ "haiti":"Haití","scotland":"Escocia","usa":"Estados Unidos","united states":"Estados Unidos","paraguay":"Paraguay",
+ "australia":"Australia","turkey":"Turquía","turkiye":"Turquía","germany":"Alemania","curacao":"Curazao",
+ "ivory coast":"Costa de Marfil","cote divoire":"Costa de Marfil","ecuador":"Ecuador","netherlands":"Países Bajos",
+ "japan":"Japón","sweden":"Suecia","tunisia":"Túnez","belgium":"Bélgica","egypt":"Egipto","iran":"Irán","ir iran":"Irán",
+ "new zealand":"Nueva Zelanda","spain":"España","cape verde":"Cabo Verde","cabo verde":"Cabo Verde",
  "saudi arabia":"Arabia Saudita","uruguay":"Uruguay","france":"Francia","senegal":"Senegal","iraq":"Irak","norway":"Noruega",
  "argentina":"Argentina","algeria":"Argelia","austria":"Austria","jordan":"Jordania","portugal":"Portugal",
  "dr congo":"RD Congo","congo dr":"RD Congo","democratic republic of congo":"RD Congo",
  "uzbekistan":"Uzbekistán","colombia":"Colombia","england":"Inglaterra","croatia":"Croacia","ghana":"Ghana","panama":"Panamá"
 };
-function norm(s){return (s||"").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();}
+function norm(s){return (s||"").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[&\/-]/g,' ').replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim();}
 const ALIAS_N={}; for(const k in ALIAS) ALIAS_N[norm(k)]=ALIAS[k];
 function toES(name){ return ALIAS_N[norm(name)]||null; }
 
 /* índice de pares de equipos -> id del partido */
 const PAIR={}; M.forEach(m=>{ PAIR[m[2]+'|'+m[3]]=m[0]; });
 
-function parseStatus(short,el,gh,ga){
-  const LIVE=['1H','2H','ET','BT','P','LIVE','HT','INT','SUSP'];
-  const DONE=['FT','AET','PEN'];
-  if(LIVE.includes(short)){
-    let label;
-    if(short==='HT')label='ENT'; else if(short==='P'||short==='PEN')label='PEN';
-    else if(short==='BT')label='DESC'; else if(short==='SUSP'||short==='INT')label='⏸';
-    else label=el?el+"'":'LIVE';
-    return {phase:'live',label,gh:gh??0,ga:ga??0,hasScore:true};
-  }
-  if(DONE.includes(short)) return {phase:'done',label:'Final',gh:gh??0,ga:ga??0,hasScore:true};
-  return null;
+function teamES(c){
+  const ab=c.team&&c.team.abbreviation;
+  if(ab&&ABBR[ab]) return ABBR[ab];
+  return toES(c.team&&(c.team.displayName||c.team.name));
 }
+
+function parseEvent(ev){
+  const comp=ev.competitions&&ev.competitions[0]; if(!comp) return;
+  const cs=comp.competitors; if(!cs||cs.length<2) return;
+  const t0=teamES(cs[0]), t1=teamES(cs[1]); if(!t0||!t1) return;
+  const s0=parseInt(cs[0].score,10), s1=parseInt(cs[1].score,10);
+  let id,gh,ga;
+  if(PAIR[t0+'|'+t1]){ id=PAIR[t0+'|'+t1]; gh=s0; ga=s1; }
+  else if(PAIR[t1+'|'+t0]){ id=PAIR[t1+'|'+t0]; gh=s1; ga=s0; }
+  else return;
+  const st=comp.status&&comp.status.type; if(!st) return;
+  if(st.state==='pre'){ delete results[id]; return; }
+  let phase,label;
+  if(st.state==='in'){
+    phase='live';
+    const sd=(st.shortDetail||st.detail||st.description||'').toLowerCase();
+    const dc=comp.status.displayClock||'';
+    if(sd.includes('half')||st.shortDetail==='HT') label='ENT';
+    else if(sd.includes('pen')) label='PEN';
+    else label=dc||'LIVE';
+  } else {
+    phase='done';
+    const sd=(st.shortDetail||st.description||'').toLowerCase();
+    label=sd.includes('pen')?'Final · pen':(sd.includes('extra')||sd.includes('aet')?'Final · TE':'Final');
+  }
+  results[id]={phase,label,gh:isNaN(gh)?0:gh,ga:isNaN(ga)?0:ga,hasScore:true};
+}
+
 function matchInfo(m){
   const r=results[m[0]];
   if(r) return r;
@@ -616,85 +592,44 @@ function matchInfo(m){
   return {phase:st,diff,hasScore:false};
 }
 
-function setStatus(type,msg){ const s=document.getElementById('cfgStatus'); if(!s)return; s.className='status '+type; s.textContent=msg; }
-function spinRefresh(){ const ic=refreshBtn.querySelector('.refresh'); ic.classList.add('spin'); setTimeout(()=>ic.classList.remove('spin'),650); }
+function fmtUTC(d){ return `${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}`; }
 function anyLive(){ for(const k in results){ if(results[k]&&results[k].phase==='live') return true; } return false; }
 function anyTodayUpcoming(){ const t=todayKeyCL(); return M.some(m=>clDate(m[1]).key===t && matchInfo(m).phase==='next'); }
-function updateLive(){ cfgBtn.classList.toggle('live-on',anyLive()); }
+function updateLive(){ refreshBtn.classList.toggle('live-on',anyLive()); }
+function spinRefresh(){ const ic=refreshBtn.querySelector('.refresh'); ic.classList.add('spin'); setTimeout(()=>ic.classList.remove('spin'),650); }
 
-async function fetchScores(manual){
-  const key=getKey(); if(!key||fetching) return;
-  if(quota().count>=DAILY_CAP){ setStatus('info','Alcanzaste el límite diario gratuito (100). Se reinicia mañana.'); return; }
-  fetching=true; if(manual) spinRefresh();
+async function fetchScores(opt){
+  opt=opt||{}; if(fetching) return; fetching=true;
+  if(opt.manual) spinRefresh();
   try{
-    const url=`${API_BASE}/fixtures?league=${LEAGUE}&season=${SEASON}&date=${isoDateCL()}&timezone=America/Santiago`;
-    const res=await fetch(url,{headers:{'x-apisports-key':key}});
-    bumpQuota();
+    const now=new Date();
+    const yest=new Date(now.getTime()-86400000), tomo=new Date(now.getTime()+86400000);
+    const range = opt.full ? `20260611-${fmtUTC(tomo)}` : `${fmtUTC(yest)}-${fmtUTC(tomo)}`;
+    const res=await fetch(`${ESPN}?dates=${range}&limit=400`);
     const data=await res.json();
-    const errs=data&&data.errors;
-    const hasErr = errs && (Array.isArray(errs)? errs.length : Object.keys(errs).length);
-    if(hasErr){
-      const msg=Array.isArray(errs)?errs.join(' '):Object.values(errs).join(' ');
-      setStatus('err', msg||'La API devolvió un error. Revisa tu clave o tu plan.');
-      fetching=false; return;
-    }
-    (data.response||[]).forEach(fx=>{
-      const hES=toES(fx.teams&&fx.teams.home&&fx.teams.home.name);
-      const aES=toES(fx.teams&&fx.teams.away&&fx.teams.away.name);
-      if(!hES||!aES) return;
-      let id,gh,ga;
-      if(PAIR[hES+'|'+aES]){ id=PAIR[hES+'|'+aES]; gh=fx.goals.home; ga=fx.goals.away; }
-      else if(PAIR[aES+'|'+hES]){ id=PAIR[aES+'|'+hES]; gh=fx.goals.away; ga=fx.goals.home; }
-      else return;
-      const r=parseStatus(fx.fixture.status.short, fx.fixture.status.elapsed, gh, ga);
-      if(r) results[id]=r; else delete results[id];
-    });
+    (data.events||[]).forEach(parseEvent);
     saveCache(); render(); updateLive();
-    setStatus('ok', `Conectado · ${quota().count}/100 consultas hoy`);
-  }catch(e){
-    setStatus('err','No se pudo conectar. Revisa tu red o intenta de nuevo.');
-  }
+  }catch(e){ /* sin conexión: la app sigue mostrando los horarios */ }
   fetching=false;
 }
 
 function scheduleScores(){
   clearTimeout(scoresTimer);
-  if(!getKey()||document.visibilityState!=='visible') return;
+  if(document.visibilityState!=='visible') return;
   let delay;
-  if(anyLive()) delay=120000;            // en vivo: cada 2 min
-  else if(anyTodayUpcoming()) delay=900000; // próximos hoy: cada 15 min
-  else return;                            // sin partidos hoy: no consulta
+  if(anyLive()) delay=60000;              // en vivo: cada 60 s
+  else if(anyTodayUpcoming()) delay=600000; // próximos hoy: cada 10 min
+  else return;                            // sin partidos hoy: descansa
   scoresTimer=setTimeout(()=>fetchScores().then(scheduleScores), delay);
 }
 
-/* modal */
-function openCfg(){
-  document.getElementById('keyInput').value=getKey();
-  overlay.classList.add('show');
-  if(getKey()) setStatus('ok',`Conectado · ${quota().count}/100 consultas hoy`);
-  else setStatus('info','Sin clave conectada: la app muestra solo los horarios.');
-}
-function closeCfg(){ overlay.classList.remove('show'); }
-cfgBtn.onclick=openCfg;
-document.getElementById('cfgClose').onclick=closeCfg;
-overlay.onclick=e=>{ if(e.target===overlay) closeCfg(); };
-document.getElementById('keySave').onclick=()=>{
-  const k=document.getElementById('keyInput').value.trim();
-  setKey(k); cfgBtn.classList.toggle('active',!!k);
-  if(k){ setStatus('info','Conectando…'); fetchScores(true).then(scheduleScores); }
-  else { results={}; saveCache(); render(); updateLive(); setStatus('info','Sin clave: solo horarios.'); }
-};
-document.getElementById('keyClear').onclick=()=>{
-  setKey(''); document.getElementById('keyInput').value=''; results={}; saveCache();
-  render(); updateLive(); cfgBtn.classList.remove('active','live-on');
-  setStatus('info','Clave eliminada. La app sigue con los horarios.');
-};
-refreshBtn.onclick=()=>{ if(!getKey()){ openCfg(); return; } fetchScores(true).then(scheduleScores); };
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&getKey()) fetchScores().then(scheduleScores); });
+refreshBtn.onclick=()=>{ fetchScores({manual:true,full:true}).then(scheduleScores); };
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') fetchScores().then(scheduleScores); });
 
 /* init resultados */
 loadCache();
-if(getKey()){ cfgBtn.classList.add('active'); fetchScores().then(scheduleScores); updateLive(); }
+fetchScores({full:true}).then(scheduleScores);
+updateLive();
 
 /* ============================================================================ */
 
