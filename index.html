@@ -62,7 +62,7 @@
   /* Controls */
   .controls{position:sticky;top:0;z-index:20;background:rgba(10,15,28,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:10px 0 11px}
   .tabs{display:flex;gap:6px;margin-bottom:9px}
-  .tab{flex:1;text-align:center;padding:9px 4px;border-radius:11px;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-weight:600;font-size:13.5px;cursor:pointer;transition:.15s}
+  .tab{flex:1;text-align:center;padding:9px 3px;border-radius:11px;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-weight:600;font-size:13px;cursor:pointer;transition:.15s}
   .tab.active{background:var(--grass);border-color:var(--grass);color:#062;box-shadow:0 4px 14px rgba(43,217,107,.25)}
   .row2{display:flex;gap:8px;align-items:center}
   .row2 .search{min-width:0}
@@ -125,6 +125,30 @@
 
   .empty{text-align:center;color:var(--muted);padding:50px 20px}
   .empty .big{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--faint)}
+
+  /* Tablas de posiciones */
+  .standings{margin-top:18px}
+  .gtable{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px}
+  .gtable h3{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:21px;letter-spacing:.04em;padding:11px 13px;background:var(--surface2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .gtable h3 .gp{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;color:var(--faint);letter-spacing:.04em;margin-left:auto;text-transform:uppercase}
+  .ghead,.grow{display:grid;grid-template-columns:24px 1fr 26px 26px 26px 40px 32px;gap:5px;align-items:center;padding:9px 12px;font-size:13px}
+  .ghead{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);font-weight:700;border-bottom:1px solid var(--line)}
+  .ghead .c,.grow .c{text-align:center;font-variant-numeric:tabular-nums}
+  .grow+.grow{border-top:1px solid rgba(255,255,255,.045)}
+  .grow .pos{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--muted);text-align:center}
+  .grow.q1{box-shadow:inset 3px 0 0 var(--grass)}
+  .grow.q2{box-shadow:inset 3px 0 0 var(--gold)}
+  .grow.q1 .pos{color:var(--grass)}
+  .grow.q2 .pos{color:var(--gold)}
+  .grow .tm{display:flex;align-items:center;gap:8px;min-width:0;font-weight:600}
+  .grow .tm .fl{font-size:17px;line-height:1;flex:none;width:21px;text-align:center}
+  .grow .tm .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .grow .tm .sud{font-size:9px;font-weight:800;color:#8fe3b0;flex:none}
+  .grow .c{color:var(--muted)}
+  .grow .pts{text-align:center;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+  .st-note{font-size:11.5px;color:var(--faint);line-height:1.6;padding:4px 4px 0}
+  .st-note .k{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin:0 3px}
+  .st-note b{color:var(--muted)}
   footer{text-align:center;color:var(--faint);font-size:11px;padding:26px 14px 10px;line-height:1.6}
   footer b{color:var(--muted)}
 
@@ -171,6 +195,7 @@
       <div class="tab active" data-tab="next">Próximos</div>
       <div class="tab" data-tab="today">Hoy</div>
       <div class="tab" data-tab="all">Todos</div>
+      <div class="tab" data-tab="tables">Tablas</div>
     </div>
     <div class="row2">
       <label class="search">
@@ -425,6 +450,7 @@ function todayKeyCL(){
 }
 
 function render(){
+  if(TAB==="tables"){ renderStandings(); return; }
   const tKey=todayKeyCL();
   let rows=M.filter(m=>{
     const ph=matchInfo(m).phase;
@@ -494,6 +520,62 @@ function closeDays(h){
   // cierra cada bloque .day insertando </div> antes del siguiente y al final
   const parts = h.split('<div class="day">').filter(Boolean);
   return parts.map(p=>'<div class="day">'+p+'</div>').join('');
+}
+
+/* ---------- Tablas de posiciones (calculadas desde los resultados) ---------- */
+function computeStandings(){
+  const G={};
+  M.forEach(m=>{
+    const g=m[4],h=m[2],a=m[3];
+    G[g]=G[g]||{};
+    G[g][h]=G[g][h]||{t:h,pj:0,g:0,e:0,p:0,gf:0,gc:0,pts:0};
+    G[g][a]=G[g][a]||{t:a,pj:0,g:0,e:0,p:0,gf:0,gc:0,pts:0};
+    const r=results[m[0]];
+    if(r&&r.phase==='done'&&r.hasScore){
+      const H=G[g][h],A=G[g][a];
+      H.pj++;A.pj++;H.gf+=r.gh;H.gc+=r.ga;A.gf+=r.ga;A.gc+=r.gh;
+      if(r.gh>r.ga){H.g++;A.p++;H.pts+=3;}
+      else if(r.gh<r.ga){A.g++;H.p++;A.pts+=3;}
+      else{H.e++;A.e++;H.pts++;A.pts++;}
+    }
+  });
+  const out={};
+  Object.keys(G).sort().forEach(g=>{
+    out[g]=Object.values(G[g]).sort((x,y)=>
+      y.pts-x.pts || (y.gf-y.gc)-(x.gf-x.gc) || y.gf-x.gf || x.t.localeCompare(y.t));
+  });
+  return out;
+}
+
+function renderStandings(){
+  const S=computeStandings();
+  const groups = GRP ? [GRP] : Object.keys(S);
+  let html='<div class="standings">';
+  groups.forEach(g=>{
+    const rows=S[g]; if(!rows) return;
+    html+=`<div class="gtable"><h3>Grupo ${g}</h3>`;
+    html+=`<div class="ghead"><span></span><span>Equipo</span><span class="c">PJ</span><span class="c">G</span><span class="c">P</span><span class="c">DG</span><span class="c">Pts</span></div>`;
+    rows.forEach((r,i)=>{
+      const q = i<2 ? 'q1' : (i===2 ? 'q2' : '');
+      const dg=r.gf-r.gc, dgs=(dg>0?'+':'')+dg;
+      const sud = T[r.t] && T[r.t].c==='CON' ? '<span class="sud">●</span>' : '';
+      html+=`<div class="grow ${q}">
+        <span class="pos">${i+1}</span>
+        <span class="tm"><span class="fl">${T[r.t]?T[r.t].f:''}</span><span class="nm">${r.t}</span>${sud}</span>
+        <span class="c">${r.pj}</span>
+        <span class="c">${r.g}</span>
+        <span class="c">${r.p}</span>
+        <span class="c">${dgs}</span>
+        <span class="pts">${r.pts}</span>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  html+=`<div class="st-note">
+    <span class="k" style="background:var(--grass)"></span><b>1º y 2º</b> avanzan a 16avos · <span class="k" style="background:var(--gold)"></span><b>3º</b> puede avanzar (8 mejores terceros).<br>
+    Orden por puntos, diferencia de gol y goles a favor. Algunos desempates finos pueden variar según los criterios oficiales de FIFA.
+  </div></div>`;
+  list.innerHTML=html;
 }
 
 window.toggle=function(el){ el.parentElement.classList.toggle("open"); };
