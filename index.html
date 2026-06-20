@@ -110,13 +110,14 @@
   .m-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:1px;font-size:11.5px;color:var(--muted)}
   .g-pill{font-weight:800;color:#cdd8f5;background:var(--surface2);border:1px solid var(--line);padding:1px 7px;border-radius:6px;font-size:11px}
   .tv-pill{font-weight:800;font-size:10.5px;color:#fff;background:linear-gradient(135deg,#1f3bd6,#0c1a6e);border:1px solid #3a52e0;padding:1px 7px;border-radius:6px;letter-spacing:.01em}
+  .tv-pill.chv{background:linear-gradient(135deg,#e23744,#a31420);border-color:#ef5360}
   .m-meta .sep{color:var(--faint)}
   .ar{flex:none;align-self:center;color:var(--faint);transition:.2s}
   .match.open .ar{transform:rotate(180deg)}
 
   /* Expand */
   .m-body{max-height:0;overflow:hidden;transition:max-height .28s ease}
-  .match.open .m-body{max-height:340px}
+  .match.open .m-body{max-height:760px}
   .m-body-in{padding:0 13px 14px;border-top:1px solid var(--line);margin-top:0}
   .venue{display:flex;align-items:center;gap:8px;padding:11px 0 10px;font-size:13px;color:var(--text)}
   .venue .vflag{font-size:17px}
@@ -124,6 +125,17 @@
   .venue small{display:block;color:var(--muted);font-weight:500;font-size:11.5px}
   .note{font-size:13px;color:#c7d2ee;line-height:1.55;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
   .note .lbl{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--grass);font-weight:800;margin-bottom:5px}
+  .events:not(:empty){margin-top:11px}
+  .ev-h{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--grass);font-weight:800;margin-bottom:8px}
+  .ev-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13.5px}
+  .ev-row+.ev-row{border-top:1px solid rgba(255,255,255,.04)}
+  .ev-row.away{flex-direction:row-reverse;text-align:right}
+  .ev-ic{flex:none;font-size:13px;width:18px;text-align:center}
+  .ev-min{flex:none;min-width:32px;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:700;font-size:12px}
+  .ev-who{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ev-row.goal .ev-who{font-weight:800}
+  .ev-row.og .ev-who{color:var(--muted)}
+  .ev-empty{font-size:12.5px;color:var(--faint);padding:4px 0}
 
   .empty{text-align:center;color:var(--muted);padding:50px 20px}
   .empty .big{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--faint)}
@@ -245,6 +257,7 @@
     </div>
     <div class="row3">
       <div class="chip" id="conmebol">🌎 Sudamérica</div>
+      <div class="chip" id="chv">CHV</div>
       <div class="chip" id="disney">Disney+</div>
       <button class="icon-btn" id="refreshBtn" title="Actualizar resultados">
         <span class="ping"></span>
@@ -325,6 +338,10 @@ const ELITE = new Set(["Argentina","Brasil","España","Francia","Inglaterra","Po
 /* Partidos de fase de grupos transmitidos por Disney+ (plan premium) en Chile.
    Fuente: derechos Disney+/ESPN Chile (jun 2026). La programación puede ajustarse. */
 const DISNEY = new Set([1,4,6,11,15,17,19,22,24,26,30,32,34,37,41,45,46,52,56,59,61,64,69]);
+
+/* Partidos de fase de grupos transmitidos por Chilevisión (CHV, TV abierta) en Chile.
+   Fuente: parrilla oficial de Chilevisión (jun 2026). La programación puede ajustarse. */
+const CHV = new Set([1,3,4,5,6,10,11,14,15,17,19,22,24,26,27,29,30,34,36,37,38,41,43,45,46,47,52,54,56,58,59,61,64,69]);
 
 /* ---------- Sedes ---------- */
 const VENUE = {
@@ -480,7 +497,7 @@ function countdown(ms){
 
 /* ---------- Render ---------- */
 const list=document.getElementById("list");
-let TAB="next", Q="", GRP="", CON=false, DIS=false;
+let TAB="next", Q="", GRP="", CON=false, DIS=false, FCHV=false;
 
 function todayKeyCL(){
   const p=new Intl.DateTimeFormat("es-CL",{timeZone:"America/Santiago",day:"numeric",month:"short",year:"numeric"}).formatToParts(new Date());
@@ -499,6 +516,7 @@ function render(){
     if(GRP && m[4]!==GRP) return false;
     if(CON && !(T[m[2]].c==="CON"||T[m[3]].c==="CON")) return false;
     if(DIS && !DISNEY.has(m[0])) return false;
+    if(FCHV && !CHV.has(m[0])) return false;
     if(Q){ const s=(m[2]+" "+m[3]).toLowerCase(); if(!s.includes(Q.toLowerCase())) return false; }
     return true;
   });
@@ -536,7 +554,7 @@ function render(){
       if(st==="done"){ if(info.gh<info.ga)loH=" lose"; if(info.ga<info.gh)loA=" lose"; }
     }
     html+=`
-    <div class="match ${st==="live"?"live":""} ${fav?"fav":""}" data-id="${id}">
+    <div class="match ${st==="live"?"live":""} ${fav?"fav":""} ${openSet.has(id)?"open":""}" data-id="${id}">
       <div class="m-top" onclick="toggle(this)">
         <div class="m-time">
           <div class="hr">${clTime(iso)}</div><div class="tz">CHILE</div>${badge}
@@ -544,18 +562,20 @@ function render(){
         <div class="m-mid">
           <div class="team${loH}"><span class="fl">${T[h].f}</span><span class="nm">${h}</span>${cmH}${scH}</div>
           <div class="team${loA}"><span class="fl">${T[a].f}</span><span class="nm">${a}</span>${cmA}${scA}</div>
-          <div class="m-meta"><span class="g-pill">Grupo ${g}</span>${DISNEY.has(id)?'<span class="tv-pill">Disney+</span>':''}<span class="sep">·</span>${ven[2]} <span class="sep">·</span>${city}</div>
+          <div class="m-meta"><span class="g-pill">Grupo ${g}</span>${CHV.has(id)?'<span class="tv-pill chv">CHV</span>':''}${DISNEY.has(id)?'<span class="tv-pill">Disney+</span>':''}<span class="sep">·</span>${ven[2]} <span class="sep">·</span>${city}</div>
         </div>
         <svg class="ar" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div class="m-body"><div class="m-body-in">
         <div class="venue"><span class="vflag">${ven[1]}</span><div><b>${ven[0]}</b><small>${city}, ${ven[2]}</small></div></div>
         <div class="note"><span class="lbl">El partido</span>${comment(m)}</div>
+        <div class="events" id="ev-${id}">${openSet.has(id)&&eventsHtml[id]?eventsHtml[id]:''}</div>
       </div></div>
     </div>`;
     // cerrar día si es el último de su grupo de fecha
   });
   list.innerHTML = closeDays(html);
+  openSet.forEach(id=>{ if(document.getElementById('ev-'+id)) loadEvents(id); });
 }
 function closeDays(h){
   // cierra cada bloque .day insertando </div> antes del siguiente y al final
@@ -619,7 +639,58 @@ function renderStandings(){
   list.innerHTML=html;
 }
 
-window.toggle=function(el){ el.parentElement.classList.toggle("open"); };
+/* ---------- Goles y eventos del partido (ESPN summary) ---------- */
+const openSet=new Set();
+const eventsHtml={};
+function teamNameES(t){ if(!t) return null; const ab=t.abbreviation; if(ab&&ABBR[ab]) return ABBR[ab]; return toES(t.displayName||t.name); }
+function clockNum(s){ const n=parseInt(s,10); return isNaN(n)?999:n; }
+function renderEventsHtml(data,m){
+  const items=[];
+  (data.keyEvents||[]).forEach(e=>{
+    const tp=((e.type&&(e.type.text||e.type.name))||'').toLowerCase();
+    let icon,cls;
+    if(tp.includes('own goal')){ icon='⚽'; cls='og'; }
+    else if(tp.includes('goal')){ icon='⚽'; cls='goal'; }
+    else if(tp.includes('yellow')){ icon='🟨'; cls='yc'; }
+    else if(tp.includes('red')){ icon='🟥'; cls='rc'; }
+    else return; // omite sustituciones y otros
+    const min=(e.clock&&e.clock.displayValue)||'';
+    const tn=e.team?teamNameES(e.team):null;
+    const side=tn===m[2]?'home':(tn===m[3]?'away':'');
+    let who=(e.athletesInvolved&&e.athletesInvolved[0]&&(e.athletesInvolved[0].displayName))||'';
+    if(cls==='og') who+=' (e/c)';
+    if(cls==='goal'&&tp.includes('penalty')) who+=' (pen)';
+    items.push({min,icon,cls,side,who,k:clockNum(min)});
+  });
+  if(!items.length) return '';
+  items.sort((a,b)=>a.k-b.k);
+  const rows=items.map(it=>`<div class="ev-row ${it.side} ${it.cls}"><span class="ev-ic">${it.icon}</span><span class="ev-min">${it.min}</span><span class="ev-who">${it.who||'—'}</span></div>`).join('');
+  return `<div class="ev-h">Goles y tarjetas</div>${rows}`;
+}
+async function loadEvents(id){
+  const m=M.find(x=>x[0]==id); if(!m) return;
+  const ph=matchInfo(m).phase;
+  if(ph==='next') return;
+  const eid=espnId[id]; if(!eid) return;
+  let data;
+  try{
+    if(ph==='live'){ const r=await fetch(SUMMARY+eid); data=await r.json(); summaryCache[eid]=data; }
+    else data=await fetchSummary(eid);
+  }catch(e){ data=summaryCache[eid]; }
+  if(!data) return;
+  const html=renderEventsHtml(data,m);
+  eventsHtml[id]=html;
+  const c=document.getElementById('ev-'+id);
+  if(c) c.innerHTML = html || '<div class="ev-empty">Sin goles ni tarjetas por ahora.</div>';
+}
+window.toggle=function(el){
+  const card=el.parentElement;
+  const id=+card.dataset.id;
+  const opening=!card.classList.contains('open');
+  card.classList.toggle('open');
+  if(opening){ openSet.add(id); loadEvents(id); }
+  else openSet.delete(id);
+};
 
 /* ---------- Formación / alineaciones (ESPN summary) ---------- */
 const SUMMARY='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=';
@@ -752,6 +823,7 @@ document.getElementById("q").oninput=e=>{Q=e.target.value;render();};
 document.getElementById("grp").onchange=e=>{GRP=e.target.value;render();};
 document.getElementById("conmebol").onclick=function(){CON=!CON;this.classList.toggle("on",CON);render();};
 document.getElementById("disney").onclick=function(){DIS=!DIS;this.classList.toggle("on",DIS);render();};
+document.getElementById("chv").onclick=function(){FCHV=!FCHV;this.classList.toggle("on",FCHV);render();};
 
 /* reloj */
 function tick(){
