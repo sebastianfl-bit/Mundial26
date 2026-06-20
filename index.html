@@ -131,6 +131,7 @@
   .ev-row+.ev-row{border-top:1px solid rgba(255,255,255,.04)}
   .ev-row.away{flex-direction:row-reverse;text-align:right}
   .ev-ic{flex:none;font-size:13px;width:18px;text-align:center}
+  .ev-fl{flex:none;font-size:15px;line-height:1}
   .ev-min{flex:none;min-width:32px;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:700;font-size:12px}
   .ev-who{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ev-row.goal .ev-who{font-weight:800}
@@ -647,7 +648,8 @@ function renderEventsHtml(m){
   const icon={goal:'⚽',og:'⚽',yc:'🟨',rc:'🟥'};
   const rows=evs.slice().sort((a,b)=>clockNum(a.min)-clockNum(b.min)).map(it=>{
     const side=it.team===m[2]?'home':(it.team===m[3]?'away':'');
-    return `<div class="ev-row ${side} ${it.kind}"><span class="ev-ic">${icon[it.kind]}</span><span class="ev-min">${it.min}</span><span class="ev-who">${it.who||'—'}</span></div>`;
+    const fl=T[it.team]?T[it.team].f:'';
+    return `<div class="ev-row ${side} ${it.kind}"><span class="ev-fl">${fl}</span><span class="ev-ic">${icon[it.kind]}</span><span class="ev-min">${it.min}</span><span class="ev-who">${it.who||'—'}</span></div>`;
   }).join('');
   return `<div class="ev-h">Goles y tarjetas</div>${rows}`;
 }
