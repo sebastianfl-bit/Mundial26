@@ -569,13 +569,12 @@ function render(){
       <div class="m-body"><div class="m-body-in">
         <div class="venue"><span class="vflag">${ven[1]}</span><div><b>${ven[0]}</b><small>${city}, ${ven[2]}</small></div></div>
         <div class="note"><span class="lbl">El partido</span>${comment(m)}</div>
-        <div class="events" id="ev-${id}">${openSet.has(id)&&eventsHtml[id]?eventsHtml[id]:''}</div>
+        <div class="events" id="ev-${id}">${openSet.has(id)?renderEventsHtml(m):''}</div>
       </div></div>
     </div>`;
     // cerrar día si es el último de su grupo de fecha
   });
   list.innerHTML = closeDays(html);
-  openSet.forEach(id=>{ if(document.getElementById('ev-'+id)) loadEvents(id); });
 }
 function closeDays(h){
   // cierra cada bloque .day insertando </div> antes del siguiente y al final
@@ -639,57 +638,30 @@ function renderStandings(){
   list.innerHTML=html;
 }
 
-/* ---------- Goles y eventos del partido (ESPN summary) ---------- */
+/* ---------- Goles y tarjetas (desde el scoreboard de ESPN) ---------- */
 const openSet=new Set();
-const eventsHtml={};
-function teamNameES(t){ if(!t) return null; const ab=t.abbreviation; if(ab&&ABBR[ab]) return ABBR[ab]; return toES(t.displayName||t.name); }
 function clockNum(s){ const n=parseInt(s,10); return isNaN(n)?999:n; }
-function renderEventsHtml(data,m){
-  const items=[];
-  (data.keyEvents||[]).forEach(e=>{
-    const tp=((e.type&&(e.type.text||e.type.name))||'').toLowerCase();
-    let icon,cls;
-    if(tp.includes('own goal')){ icon='⚽'; cls='og'; }
-    else if(tp.includes('goal')){ icon='⚽'; cls='goal'; }
-    else if(tp.includes('yellow')){ icon='🟨'; cls='yc'; }
-    else if(tp.includes('red')){ icon='🟥'; cls='rc'; }
-    else return; // omite sustituciones y otros
-    const min=(e.clock&&e.clock.displayValue)||'';
-    const tn=e.team?teamNameES(e.team):null;
-    const side=tn===m[2]?'home':(tn===m[3]?'away':'');
-    let who=(e.athletesInvolved&&e.athletesInvolved[0]&&(e.athletesInvolved[0].displayName))||'';
-    if(cls==='og') who+=' (e/c)';
-    if(cls==='goal'&&tp.includes('penalty')) who+=' (pen)';
-    items.push({min,icon,cls,side,who,k:clockNum(min)});
-  });
-  if(!items.length) return '';
-  items.sort((a,b)=>a.k-b.k);
-  const rows=items.map(it=>`<div class="ev-row ${it.side} ${it.cls}"><span class="ev-ic">${it.icon}</span><span class="ev-min">${it.min}</span><span class="ev-who">${it.who||'—'}</span></div>`).join('');
+function renderEventsHtml(m){
+  const evs=matchEvents[m[0]];
+  if(!evs||!evs.length) return '';
+  const icon={goal:'⚽',og:'⚽',yc:'🟨',rc:'🟥'};
+  const rows=evs.slice().sort((a,b)=>clockNum(a.min)-clockNum(b.min)).map(it=>{
+    const side=it.team===m[2]?'home':(it.team===m[3]?'away':'');
+    return `<div class="ev-row ${side} ${it.kind}"><span class="ev-ic">${icon[it.kind]}</span><span class="ev-min">${it.min}</span><span class="ev-who">${it.who||'—'}</span></div>`;
+  }).join('');
   return `<div class="ev-h">Goles y tarjetas</div>${rows}`;
-}
-async function loadEvents(id){
-  const m=M.find(x=>x[0]==id); if(!m) return;
-  const ph=matchInfo(m).phase;
-  if(ph==='next') return;
-  const eid=espnId[id]; if(!eid) return;
-  let data;
-  try{
-    if(ph==='live'){ const r=await fetch(SUMMARY+eid); data=await r.json(); summaryCache[eid]=data; }
-    else data=await fetchSummary(eid);
-  }catch(e){ data=summaryCache[eid]; }
-  if(!data) return;
-  const html=renderEventsHtml(data,m);
-  eventsHtml[id]=html;
-  const c=document.getElementById('ev-'+id);
-  if(c) c.innerHTML = html || '<div class="ev-empty">Sin goles ni tarjetas por ahora.</div>';
 }
 window.toggle=function(el){
   const card=el.parentElement;
   const id=+card.dataset.id;
   const opening=!card.classList.contains('open');
   card.classList.toggle('open');
-  if(opening){ openSet.add(id); loadEvents(id); }
-  else openSet.delete(id);
+  if(opening){
+    openSet.add(id);
+    const c=document.getElementById('ev-'+id);
+    if(c){ const m=M.find(x=>x[0]==id); const html=renderEventsHtml(m);
+      c.innerHTML = html || (matchInfo(m).phase==='next' ? '' : '<div class="ev-empty">Sin goles ni tarjetas.</div>'); }
+  } else openSet.delete(id);
 };
 
 /* ---------- Formación / alineaciones (ESPN summary) ---------- */
@@ -832,11 +804,11 @@ function tick(){
 }
 /* ===================== RESULTADOS EN VIVO (ESPN, sin API key) ===================== */
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
-let results={}, scoresTimer=null, fetching=false, espnId={}, ENNAME={};
+let results={}, scoresTimer=null, fetching=false, espnId={}, ENNAME={}, matchEvents={};
 const refreshBtn=document.getElementById('refreshBtn');
 
-function loadCache(){ try{const c=JSON.parse(localStorage.getItem('espnResults')||'{}'); if(c.data) results=c.data; if(c.ids) espnId=c.ids; if(c.en) ENNAME=c.en;}catch(e){} }
-function saveCache(){ try{localStorage.setItem('espnResults',JSON.stringify({t:Date.now(),data:results,ids:espnId,en:ENNAME}));}catch(e){} }
+function loadCache(){ try{const c=JSON.parse(localStorage.getItem('espnResults')||'{}'); if(c.data) results=c.data; if(c.ids) espnId=c.ids; if(c.en) ENNAME=c.en; if(c.ev) matchEvents=c.ev;}catch(e){} }
+function saveCache(){ try{localStorage.setItem('espnResults',JSON.stringify({t:Date.now(),data:results,ids:espnId,en:ENNAME,ev:matchEvents}));}catch(e){} }
 
 /* abreviación FIFA (la que entrega ESPN) -> equipo del fixture */
 const ABBR={MEX:"México",RSA:"Sudáfrica",KOR:"Corea del Sur",CZE:"Rep. Checa",CAN:"Canadá",
@@ -888,6 +860,24 @@ function parseEvent(ev){
   else if(PAIR[t1+'|'+t0]){ id=PAIR[t1+'|'+t0]; gh=s1; ga=s0; }
   else return;
   if(ev.id) espnId[id]=ev.id;
+  // goles y tarjetas (vienen en el propio scoreboard)
+  const idToES={};
+  if(cs[0].team&&cs[0].team.id!=null) idToES[cs[0].team.id]=t0;
+  if(cs[1].team&&cs[1].team.id!=null) idToES[cs[1].team.id]=t1;
+  const evs=[];
+  (comp.details||[]).forEach(d=>{
+    let kind;
+    if(d.scoringPlay) kind=d.ownGoal?'og':'goal';
+    else if(d.redCard) kind='rc';
+    else if(d.yellowCard) kind='yc';
+    else return;
+    const ath=d.athletesInvolved&&d.athletesInvolved[0];
+    let who=ath?(ath.displayName||ath.shortName||''):'';
+    if(kind==='og') who+=' (e/c)';
+    else if(kind==='goal'&&d.penaltyKick) who+=' (pen)';
+    evs.push({kind, min:(d.clock&&d.clock.displayValue)||'', who, team:(d.team&&idToES[d.team.id])||''});
+  });
+  if(evs.length) matchEvents[id]=evs; else delete matchEvents[id];
   const st=comp.status&&comp.status.type; if(!st) return;
   if(st.state==='pre'){ delete results[id]; return; }
   let phase,label;
