@@ -400,7 +400,7 @@ const M = [
  [32,"2026-06-19T23:00","Turquía","Paraguay","D","San Francisco"],
  [33,"2026-06-20T13:00","Países Bajos","Suecia","F","Houston"],
  [34,"2026-06-20T16:00","Alemania","Costa de Marfil","E","Toronto"],
- [35,"2026-06-20T22:00","Ecuador","Curazao","E","Kansas City"],
+ [35,"2026-06-20T20:00","Ecuador","Curazao","E","Kansas City"],
  [36,"2026-06-21T00:00","Túnez","Japón","F","Monterrey"],
  [37,"2026-06-21T12:00","España","Arabia Saudita","H","Atlanta"],
  [38,"2026-06-21T15:00","Bélgica","Irán","G","Los Ángeles"],
@@ -469,25 +469,25 @@ function nowCL(){
   const d=new Date();
   return d.getTime();
 }
-function kickoff(iso){ return new Date(iso+":00-04:00").getTime(); }
+function eIso(m){ return espnDate[m[0]] || (m[1]+":00-04:00"); }
+function kickoff(m){ return new Date(eIso(m)).getTime(); }
 function state(m){
-  const k=kickoff(m[1]), now=Date.now(), end=k+120*60000;
+  const k=kickoff(m), now=Date.now(), end=k+120*60000;
   if(now<k) return ["next",k-now];
   if(now<end) return ["live",0];
   return ["done",0];
 }
 const DAYS=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 const MON=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-function clDate(iso){ // {key,dnum,dtxt} en hora chilena
-  const d=new Date(iso+":00-04:00");
-  // formatear en zona Santiago
+function clDate(m){ // {key,dnum,dtxt} en hora chilena
+  const d=new Date(eIso(m));
   const p=new Intl.DateTimeFormat("es-CL",{timeZone:"America/Santiago",weekday:"long",day:"numeric",month:"short",year:"numeric"}).formatToParts(d);
   const get=t=>p.find(x=>x.type===t).value;
   const wd=get("weekday"), day=get("day"), mo=get("month").replace(".",""), yr=get("year");
   return {key:`${yr}-${mo}-${day}`, dnum:day, dtxt:`${wd}, ${day} ${mo}`};
 }
-function clTime(iso){
-  return new Intl.DateTimeFormat("es-CL",{timeZone:"America/Santiago",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(iso+":00-04:00"));
+function clTime(m){
+  return new Intl.DateTimeFormat("es-CL",{timeZone:"America/Santiago",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(eIso(m)));
 }
 function countdown(ms){
   const h=Math.floor(ms/3600000), mi=Math.floor(ms%3600000/60000);
@@ -513,7 +513,7 @@ function render(){
   let rows=M.filter(m=>{
     const ph=matchInfo(m).phase;
     if(TAB==="next" && ph==="done") return false;
-    if(TAB==="today" && clDate(m[1]).key!==tKey) return false;
+    if(TAB==="today" && clDate(m).key!==tKey) return false;
     if(GRP && m[4]!==GRP) return false;
     if(CON && !(T[m[2]].c==="CON"||T[m[3]].c==="CON")) return false;
     if(DIS && !DISNEY.has(m[0])) return false;
@@ -521,7 +521,7 @@ function render(){
     if(Q){ const s=(m[2]+" "+m[3]).toLowerCase(); if(!s.includes(Q.toLowerCase())) return false; }
     return true;
   });
-  rows.sort((a,b)=>kickoff(a[1])-kickoff(b[1]));
+  rows.sort((a,b)=>kickoff(a)-kickoff(b));
 
   if(!rows.length){
     list.innerHTML=`<div class="empty"><div class="big">Sin partidos</div><p>No hay encuentros con estos filtros. Prueba con “Todos”.</p></div>`;
@@ -531,10 +531,10 @@ function render(){
   let html="", curKey="";
   rows.forEach(m=>{
     const [id,iso,h,a,g,city]=m;
-    const dd=clDate(iso);
+    const dd=clDate(m);
     if(dd.key!==curKey){
       curKey=dd.key;
-      const cnt=rows.filter(x=>clDate(x[1]).key===curKey).length;
+      const cnt=rows.filter(x=>clDate(x).key===curKey).length;
       html+=`<div class="day"><div class="day-h"><span class="dnum">${dd.dnum}</span><span class="dtxt">${dd.dtxt}</span><span class="dcount">${cnt} ${cnt>1?"partidos":"partido"}</span></div>`;
     }
     const info=matchInfo(m);
@@ -558,7 +558,7 @@ function render(){
     <div class="match ${st==="live"?"live":""} ${fav?"fav":""} ${openSet.has(id)?"open":""}" data-id="${id}">
       <div class="m-top" onclick="toggle(this)">
         <div class="m-time">
-          <div class="hr">${clTime(iso)}</div><div class="tz">CHILE</div>${badge}
+          <div class="hr">${clTime(m)}</div><div class="tz">CHILE</div>${badge}
         </div>
         <div class="m-mid">
           <div class="team${loH}"><span class="fl">${T[h].f}</span><span class="nm">${h}</span>${cmH}${scH}</div>
@@ -705,8 +705,8 @@ function extractStarters(rt){
 }
 function emptyTeam(t){ return {team:t,source:'none',lines:{F:[],M:[],D:[],G:[]},formation:''}; }
 function lastPlayed(team,before){
-  const c=M.filter(m=>(m[2]===team||m[3]===team)&&results[m[0]]&&results[m[0]].phase==='done'&&espnId[m[0]]&&kickoff(m[1])<before);
-  c.sort((a,b)=>kickoff(b[1])-kickoff(a[1]));
+  const c=M.filter(m=>(m[2]===team||m[3]===team)&&results[m[0]]&&results[m[0]].phase==='done'&&espnId[m[0]]&&kickoff(m)<before);
+  c.sort((a,b)=>kickoff(b)-kickoff(a));
   return c[0]||null;
 }
 async function buildTeam(team,selfData,prevMatch){
@@ -726,8 +726,8 @@ async function loadLineup(matchId){
   if(loadingLineup===matchId) return; loadingLineup=matchId;
   const m=M.find(x=>x[0]==matchId);
   const selfData = espnId[matchId] ? await fetchSummary(espnId[matchId]) : null;
-  const home=await buildTeam(m[2], selfData, lastPlayed(m[2],kickoff(m[1])));
-  const away=await buildTeam(m[3], selfData, lastPlayed(m[3],kickoff(m[1])));
+  const home=await buildTeam(m[2], selfData, lastPlayed(m[2],kickoff(m)));
+  const away=await buildTeam(m[3], selfData, lastPlayed(m[3],kickoff(m)));
   lineupData[matchId]={home,away};
   loadingLineup=null;
   if(TAB==='lineup'&&lineupMatchId==matchId) renderLineups();
@@ -735,8 +735,8 @@ async function loadLineup(matchId){
 function defaultLineupMatch(){
   const live=M.find(x=>matchInfo(x).phase==='live'); if(live) return live[0];
   const now=Date.now();
-  const up=M.filter(x=>kickoff(x[1])>=now).sort((a,b)=>kickoff(a[1])-kickoff(b[1]))[0]; if(up) return up[0];
-  const dn=M.filter(x=>matchInfo(x).phase==='done').sort((a,b)=>kickoff(b[1])-kickoff(a[1]))[0]; if(dn) return dn[0];
+  const up=M.filter(x=>kickoff(x)>=now).sort((a,b)=>kickoff(a)-kickoff(b))[0]; if(up) return up[0];
+  const dn=M.filter(x=>matchInfo(x).phase==='done').sort((a,b)=>kickoff(b)-kickoff(a))[0]; if(dn) return dn[0];
   return M[0][0];
 }
 function drawPitch(o){
@@ -768,8 +768,8 @@ function sourceLinks(m){
 }
 function renderLineups(){
   if(lineupMatchId==null) lineupMatchId=defaultLineupMatch();
-  const opts=[...M].sort((a,b)=>kickoff(a[1])-kickoff(b[1])).map(m=>{
-    const d=clDate(m[1]), fecha=(d.dtxt.split(', ')[1]||d.dtxt);
+  const opts=[...M].sort((a,b)=>kickoff(a)-kickoff(b)).map(m=>{
+    const d=clDate(m), fecha=(d.dtxt.split(', ')[1]||d.dtxt);
     return `<option value="${m[0]}"${m[0]==lineupMatchId?' selected':''}>${m[2]} vs ${m[3]} · ${fecha}</option>`;
   }).join('');
   let body;
@@ -806,11 +806,11 @@ function tick(){
 }
 /* ===================== RESULTADOS EN VIVO (ESPN, sin API key) ===================== */
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
-let results={}, scoresTimer=null, fetching=false, espnId={}, ENNAME={}, matchEvents={};
+let results={}, scoresTimer=null, fetching=false, espnId={}, ENNAME={}, matchEvents={}, espnDate={};
 const refreshBtn=document.getElementById('refreshBtn');
 
-function loadCache(){ try{const c=JSON.parse(localStorage.getItem('espnResults')||'{}'); if(c.data) results=c.data; if(c.ids) espnId=c.ids; if(c.en) ENNAME=c.en; if(c.ev) matchEvents=c.ev;}catch(e){} }
-function saveCache(){ try{localStorage.setItem('espnResults',JSON.stringify({t:Date.now(),data:results,ids:espnId,en:ENNAME,ev:matchEvents}));}catch(e){} }
+function loadCache(){ try{const c=JSON.parse(localStorage.getItem('espnResults')||'{}'); if(c.data) results=c.data; if(c.ids) espnId=c.ids; if(c.en) ENNAME=c.en; if(c.ev) matchEvents=c.ev; if(c.dt) espnDate=c.dt;}catch(e){} }
+function saveCache(){ try{localStorage.setItem('espnResults',JSON.stringify({t:Date.now(),data:results,ids:espnId,en:ENNAME,ev:matchEvents,dt:espnDate}));}catch(e){} }
 
 /* abreviación FIFA (la que entrega ESPN) -> equipo del fixture */
 const ABBR={MEX:"México",RSA:"Sudáfrica",KOR:"Corea del Sur",CZE:"Rep. Checa",CAN:"Canadá",
@@ -862,6 +862,7 @@ function parseEvent(ev){
   else if(PAIR[t1+'|'+t0]){ id=PAIR[t1+'|'+t0]; gh=s1; ga=s0; }
   else return;
   if(ev.id) espnId[id]=ev.id;
+  if(ev.date) espnDate[id]=ev.date;  // hora oficial (UTC) -> fuente de verdad del horario
   // goles y tarjetas (vienen en el propio scoreboard)
   const idToES={};
   if(cs[0].team&&cs[0].team.id!=null) idToES[cs[0].team.id]=t0;
@@ -907,7 +908,7 @@ function matchInfo(m){
 
 function fmtUTC(d){ return `${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}`; }
 function anyLive(){ for(const k in results){ if(results[k]&&results[k].phase==='live') return true; } return false; }
-function anyTodayUpcoming(){ const t=todayKeyCL(); return M.some(m=>clDate(m[1]).key===t && matchInfo(m).phase==='next'); }
+function anyTodayUpcoming(){ const t=todayKeyCL(); return M.some(m=>clDate(m).key===t && matchInfo(m).phase==='next'); }
 function updateLive(){ refreshBtn.classList.toggle('live-on',anyLive()); }
 function spinRefresh(){ const ic=refreshBtn.querySelector('.refresh'); ic.classList.add('spin'); setTimeout(()=>ic.classList.remove('spin'),650); }
 
@@ -917,7 +918,7 @@ async function fetchScores(opt){
   try{
     const now=new Date();
     const yest=new Date(now.getTime()-86400000), tomo=new Date(now.getTime()+86400000);
-    const range = opt.full ? `20260611-${fmtUTC(tomo)}` : `${fmtUTC(yest)}-${fmtUTC(tomo)}`;
+    const range = opt.full ? `20260611-20260719` : `${fmtUTC(yest)}-${fmtUTC(tomo)}`;
     const res=await fetch(`${ESPN}?dates=${range}&limit=400`);
     const data=await res.json();
     (data.events||[]).forEach(parseEvent);
