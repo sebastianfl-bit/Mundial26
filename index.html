@@ -655,7 +655,8 @@ function renderEventsHtml(m){
     let vid='';
     if(isGoal){
       const who=it.who.replace(/\s*\((?:pen|e\/c)\)/g,'').trim();
-      const q=encodeURIComponent(`${who} gol ${m[2]} ${m[3]} Mundial 2026`);
+      const minPart=it.min?` ${it.min}`:'';
+      const q=encodeURIComponent(`${who} gol${minPart} ${m[2]} ${m[3]} Mundial 2026`);
       vid=`<a class="ev-vid" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">▶ Ver</a>`;
     }
     return `<div class="ev-row ${side} ${it.kind}"><span class="ev-fl">${fl}</span><span class="ev-ic">${icon[it.kind]}</span><span class="ev-min">${it.min}</span><span class="ev-who">${it.who||'—'}</span>${vid}</div>`;
