@@ -135,6 +135,8 @@
   .ev-min{flex:none;min-width:32px;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:700;font-size:12px}
   .ev-who{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ev-row.goal .ev-who{font-weight:800}
+  .ev-vid{flex:none;text-decoration:none;font-size:11px;font-weight:800;color:var(--grass);background:rgba(43,217,107,.14);border:1px solid rgba(43,217,107,.3);padding:2px 8px;border-radius:6px;white-space:nowrap}
+  .ev-vid:active{background:rgba(43,217,107,.28)}
   .ev-row.og .ev-who{color:var(--muted)}
   .ev-empty{font-size:12.5px;color:var(--faint);padding:4px 0}
 
@@ -649,7 +651,14 @@ function renderEventsHtml(m){
   const rows=evs.slice().sort((a,b)=>clockNum(a.min)-clockNum(b.min)).map(it=>{
     const side=it.team===m[2]?'home':(it.team===m[3]?'away':'');
     const fl=T[it.team]?T[it.team].f:'';
-    return `<div class="ev-row ${side} ${it.kind}"><span class="ev-fl">${fl}</span><span class="ev-ic">${icon[it.kind]}</span><span class="ev-min">${it.min}</span><span class="ev-who">${it.who||'—'}</span></div>`;
+    const isGoal=it.kind==='goal'||it.kind==='og';
+    let vid='';
+    if(isGoal){
+      const who=it.who.replace(/\s*\((?:pen|e\/c)\)/g,'').trim();
+      const q=encodeURIComponent(`${who} gol ${m[2]} ${m[3]} Mundial 2026`);
+      vid=`<a class="ev-vid" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">▶ Ver</a>`;
+    }
+    return `<div class="ev-row ${side} ${it.kind}"><span class="ev-fl">${fl}</span><span class="ev-ic">${icon[it.kind]}</span><span class="ev-min">${it.min}</span><span class="ev-who">${it.who||'—'}</span>${vid}</div>`;
   }).join('');
   return `<div class="ev-h">Goles y tarjetas</div>${rows}`;
 }
