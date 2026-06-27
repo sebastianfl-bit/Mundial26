@@ -197,6 +197,10 @@
   .st-note{font-size:11.5px;color:var(--faint);line-height:1.6;padding:4px 4px 0}
   .st-note .k{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin:0 3px}
   .st-note b{color:var(--muted)}
+
+  /* Eliminatorias */
+  .ko-round{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.03em;color:var(--gold);padding:18px 2px 4px;border-bottom:2px solid rgba(255,206,77,.25);margin-bottom:6px;margin-top:12px}
+  .ko-pill{font-weight:800;color:var(--gold);background:rgba(255,206,77,.12);border:1px solid rgba(255,206,77,.3);padding:1px 7px;border-radius:6px;font-size:11px;white-space:nowrap}
   footer{text-align:center;color:var(--faint);font-size:11px;padding:26px 14px 10px;line-height:1.6}
   footer b{color:var(--muted)}
 
@@ -243,6 +247,7 @@
       <div class="tab active" data-tab="next">Próximos</div>
       <div class="tab" data-tab="today">Hoy</div>
       <div class="tab" data-tab="all">Todos</div>
+      <div class="tab" data-tab="ko">Eliminatorias</div>
       <div class="tab" data-tab="tables">Tablas</div>
       <div class="tab" data-tab="lineup">Formación</div>
     </div>
@@ -512,24 +517,48 @@ function render(){
   if(TAB==="tables"){ renderStandings(); return; }
   if(TAB==="lineup"){ renderLineups(); return; }
   const tKey=todayKeyCL();
-  let rows=M.filter(m=>{
-    const ph=matchInfo(m).phase;
-    if(TAB==="next" && ph==="done") return false;
-    if(TAB==="today" && clDate(m).key!==tKey) return false;
-    if(GRP && m[4]!==GRP) return false;
-    if(CON && !(T[m[2]].c==="CON"||T[m[3]].c==="CON")) return false;
-    if(DIS && !DISNEY.has(m[0])) return false;
-    if(FCHV && !CHV.has(m[0])) return false;
-    if(Q){ const s=(m[2]+" "+m[3]).toLowerCase(); if(!s.includes(Q.toLowerCase())) return false; }
-    return true;
-  });
-  rows.sort((a,b)=>kickoff(a)-kickoff(b));
 
-  if(!rows.length){
-    list.innerHTML=`<div class="empty"><div class="big">Sin partidos</div><p>No hay encuentros con estos filtros. Prueba con “Todos”.</p></div>`;
-    return;
+  /* --- Fase de grupos (excepto en tab ko) --- */
+  let groupHtml="";
+  if(TAB!=="ko"){
+    let rows=M.filter(m=>{
+      const ph=matchInfo(m).phase;
+      if(TAB==="next" && ph==="done") return false;
+      if(TAB==="today" && clDate(m).key!==tKey) return false;
+      if(GRP && m[4]!==GRP) return false;
+      if(CON && !(T[m[2]]&&T[m[2]].c==="CON"||T[m[3]]&&T[m[3]].c==="CON")) return false;
+      if(DIS && !DISNEY.has(m[0])) return false;
+      if(FCHV && !CHV.has(m[0])) return false;
+      if(Q){ const s=(m[2]+" "+m[3]).toLowerCase(); if(!s.includes(Q.toLowerCase())) return false; }
+      return true;
+    });
+    rows.sort((a,b)=>kickoff(a)-kickoff(b));
+    groupHtml=renderGroupRows(rows);
   }
 
+  /* --- Fase eliminatoria --- */
+  let koHtml="";
+  if(TAB!=="tables"&&TAB!=="lineup"){
+    const koSorted=KO.slice().sort((a,b)=>new Date(a.date||0)-new Date(b.date||0));
+    const koFiltered=koSorted.filter(k=>{
+      if(TAB==="next"&&k.phase==="done") return false;
+      if(TAB==="today"&&k.date){try{const dk=koDateKey(k);if(dk!==tKey)return false;}catch(e){return false;}}
+      if(CON){const isC=t=>T[t]&&T[t].c==='CON';if(!isC(k.home)&&!isC(k.away))return false;}
+      if(Q){const s=(k.home+" "+k.away).toLowerCase();if(!s.includes(Q.toLowerCase()))return false;}
+      return true;
+    });
+    if(koFiltered.length) koHtml=renderKORows(koFiltered);
+  }
+
+  if(!groupHtml&&!koHtml){
+    list.innerHTML=`<div class="empty"><div class="big">Sin partidos</div><p>No hay encuentros con estos filtros.</p></div>`;
+    return;
+  }
+  list.innerHTML = groupHtml + koHtml;
+}
+
+function renderGroupRows(rows){
+  if(!rows.length) return '';
   let html="", curKey="";
   rows.forEach(m=>{
     const [id,iso,h,a,g,city]=m;
@@ -547,9 +576,8 @@ function render(){
     else if(st==="done") badge=`<span class="badge b-done">${info.hasScore?"Final":"Jugado"}</span>`;
     else badge=(info.diff<3*3600000 ? `<span class="badge b-soon">Pronto</span>` : `<span class="badge b-next">${countdown(info.diff)}</span>`);
     const fav = ELITE.has(h)||ELITE.has(a);
-    const cmH = T[h].c==="CON"?`<span class="cm">SUD</span>`:"";
-    const cmA = T[a].c==="CON"?`<span class="cm">SUD</span>`:"";
-    // marcadores
+    const cmH = T[h]&&T[h].c==="CON"?`<span class="cm">SUD</span>`:"";
+    const cmA = T[a]&&T[a].c==="CON"?`<span class="cm">SUD</span>`:"";
     let scH="",scA="",loH="",loA="";
     if(info.hasScore){
       scH=`<span class="score">${info.gh}</span>`;
@@ -563,8 +591,8 @@ function render(){
           <div class="hr">${clTime(m)}</div><div class="tz">CHILE</div>${badge}
         </div>
         <div class="m-mid">
-          <div class="team${loH}"><span class="fl">${T[h].f}</span><span class="nm">${h}</span>${cmH}${scH}</div>
-          <div class="team${loA}"><span class="fl">${T[a].f}</span><span class="nm">${a}</span>${cmA}${scA}</div>
+          <div class="team${loH}"><span class="fl">${T[h]?T[h].f:''}</span><span class="nm">${h}</span>${cmH}${scH}</div>
+          <div class="team${loA}"><span class="fl">${T[a]?T[a].f:''}</span><span class="nm">${a}</span>${cmA}${scA}</div>
           <div class="m-meta"><span class="g-pill">Grupo ${g}</span>${CHV.has(id)?'<span class="tv-pill chv">CHV</span>':''}${DISNEY.has(id)?'<span class="tv-pill">Disney+</span>':''}<span class="sep">·</span>${ven[2]} <span class="sep">·</span>${city}</div>
         </div>
         <svg class="ar" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -575,9 +603,72 @@ function render(){
         <div class="events" id="ev-${id}">${openSet.has(id)?renderEventsHtml(m):''}</div>
       </div></div>
     </div>`;
-    // cerrar día si es el último de su grupo de fecha
   });
-  list.innerHTML = closeDays(html);
+  return closeDays(html);
+}
+
+/* --- Render de eliminatorias --- */
+function koDateKey(k){const d=new Date(k.date);const p=new Intl.DateTimeFormat("es-CL",{timeZone:"America/Santiago",day:"numeric",month:"short",year:"numeric"}).formatToParts(d);const g=t=>p.find(x=>x.type===t).value;return `${g("year")}-${g("month").replace(".","")}-${g("day")}`;}
+function koDateObj(k){
+  const d=new Date(k.date);
+  const p=new Intl.DateTimeFormat("es-CL",{timeZone:"America/Santiago",weekday:"long",day:"numeric",month:"short",year:"numeric"}).formatToParts(d);
+  const get=t=>p.find(x=>x.type===t).value;
+  return {key:`${get("year")}-${get("month").replace(".","")}-${get("day")}`, dnum:get("day"), dtxt:`${get("weekday")}, ${get("day")} ${get("month").replace(".","")}`};
+}
+function koTime(k){return new Intl.DateTimeFormat("es-CL",{timeZone:"America/Santiago",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(k.date));}
+function koEventsHtml(k){
+  if(!k.events||!k.events.length) return '';
+  const icon={goal:'\u26bd',og:'\u26bd',yc:'\ud83d\udfe8',rc:'\ud83d\udfe5'};
+  const rows=k.events.slice().sort((a,b)=>clockNum(a.min)-clockNum(b.min)).map(it=>{
+    const side=it.team===k.home?'home':(it.team===k.away?'away':'');
+    const fl=T[it.team]?T[it.team].f:'';
+    const isGoal=it.kind==='goal'||it.kind==='og';
+    let vid='';
+    if(isGoal){const who=it.who.replace(/\s*\((?:pen|e\/c)\)/g,'').trim();const minPart=it.min?` ${it.min}`:'';const q=encodeURIComponent(`${who} gol${minPart} ${k.home} ${k.away} Mundial 2026`);vid=`<a class="ev-vid" href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener">\u25b6 Ver</a>`;}
+    return `<div class="ev-row ${side} ${it.kind}"><span class="ev-fl">${fl}</span><span class="ev-ic">${icon[it.kind]}</span><span class="ev-min">${it.min}</span><span class="ev-who">${it.who||'\u2014'}</span>${vid}</div>`;
+  }).join('');
+  return `<div class="ev-h">Goles y tarjetas</div>${rows}`;
+}
+function renderKORows(arr){
+  let html='', curKey='', curRd='';
+  arr.forEach(k=>{
+    if(k.rd!==curRd){ curRd=k.rd; html+=`<div class="ko-round">${k.rd}</div>`; }
+    const dd=koDateObj(k);
+    if(dd.key!==curKey){
+      curKey=dd.key;
+      const cnt=arr.filter(x=>koDateObj(x).key===curKey).length;
+      html+=`<div class="day"><div class="day-h"><span class="dnum">${dd.dnum}</span><span class="dtxt">${dd.dtxt}</span><span class="dcount">${cnt} ${cnt>1?"partidos":"partido"}</span></div>`;
+    }
+    const st=k.phase;
+    let badge;
+    if(st==="live") badge=`<span class="badge b-live">${k.label||"En vivo"}</span>`;
+    else if(st==="done") badge=`<span class="badge b-done">Final</span>`;
+    else{const diff=k.date?new Date(k.date).getTime()-Date.now():0;badge=diff<3*3600000?`<span class="badge b-soon">Pronto</span>`:`<span class="badge b-next">${countdown(Math.max(0,diff))}</span>`;}
+    const flH=T[k.home]?T[k.home].f:'\ud83c\udff3\ufe0f',flA=T[k.away]?T[k.away].f:'\ud83c\udff3\ufe0f';
+    const fav=ELITE.has(k.home)||ELITE.has(k.away);
+    const cmH=T[k.home]&&T[k.home].c==='CON'?'<span class="cm">SUD</span>':'';
+    const cmA=T[k.away]&&T[k.away].c==='CON'?'<span class="cm">SUD</span>':'';
+    let scH='',scA='',loH='',loA='';
+    if(k.hasScore&&k.gh!=null){scH=`<span class="score">${k.gh}</span>`;scA=`<span class="score">${k.ga}</span>`;if(st==='done'){if(k.gh<k.ga)loH=' lose';if(k.ga<k.gh)loA=' lose';}}
+    const oid='ko-'+k.eid;
+    const isOpen=openSet.has(oid);
+    html+=`
+    <div class="match ${st==='live'?'live':''} ${fav?'fav':''} ${isOpen?'open':''}" data-id="${oid}">
+      <div class="m-top" onclick="toggle(this)">
+        <div class="m-time"><div class="hr">${k.date?koTime(k):'\u2014'}</div><div class="tz">CHILE</div>${badge}</div>
+        <div class="m-mid">
+          <div class="team${loH}"><span class="fl">${flH}</span><span class="nm">${k.home}</span>${cmH}${scH}</div>
+          <div class="team${loA}"><span class="fl">${flA}</span><span class="nm">${k.away}</span>${cmA}${scA}</div>
+          <div class="m-meta"><span class="ko-pill">${k.rd}</span><span class="sep">\u00b7</span>${k.city||'Por definir'}</div>
+        </div>
+        <svg class="ar" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="m-body"><div class="m-body-in">
+        <div class="events">${isOpen?koEventsHtml(k):''}</div>
+      </div></div>
+    </div>`;
+  });
+  return closeDays(html);
 }
 function closeDays(h){
   // cierra cada bloque .day insertando </div> antes del siguiente y al final
@@ -665,15 +756,25 @@ function renderEventsHtml(m){
 }
 window.toggle=function(el){
   const card=el.parentElement;
-  const id=+card.dataset.id;
+  const rawId=card.dataset.id;
   const opening=!card.classList.contains('open');
   card.classList.toggle('open');
   if(opening){
-    openSet.add(id);
-    const c=document.getElementById('ev-'+id);
-    if(c){ const m=M.find(x=>x[0]==id); const html=renderEventsHtml(m);
-      c.innerHTML = html || (matchInfo(m).phase==='next' ? '' : '<div class="ev-empty">Sin goles ni tarjetas.</div>'); }
-  } else openSet.delete(id);
+    openSet.add(isNaN(+rawId)?rawId:+rawId);
+    const evBox=card.querySelector('.events');
+    if(evBox){
+      if(rawId.startsWith('ko-')){
+        const eid=rawId.replace('ko-','');
+        const k=KO.find(x=>x.eid===eid);
+        if(k) evBox.innerHTML=koEventsHtml(k);
+      }else{
+        const m=M.find(x=>x[0]==rawId);
+        if(m) evBox.innerHTML=renderEventsHtml(m)||(matchInfo(m).phase==='next'?'':'<div class="ev-empty">Sin goles ni tarjetas.</div>');
+      }
+    }
+  } else {
+    openSet.delete(isNaN(+rawId)?rawId:+rawId);
+  }
 };
 
 /* ---------- Formación / alineaciones (ESPN summary) ---------- */
@@ -816,11 +917,11 @@ function tick(){
 }
 /* ===================== RESULTADOS EN VIVO (ESPN, sin API key) ===================== */
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
-let results={}, scoresTimer=null, fetching=false, espnId={}, ENNAME={}, matchEvents={}, espnDate={};
+let results={}, scoresTimer=null, fetching=false, espnId={}, ENNAME={}, matchEvents={}, espnDate={}, KO=[];
 const refreshBtn=document.getElementById('refreshBtn');
 
-function loadCache(){ try{const c=JSON.parse(localStorage.getItem('espnResults')||'{}'); if(c.data) results=c.data; if(c.ids) espnId=c.ids; if(c.en) ENNAME=c.en; if(c.ev) matchEvents=c.ev; if(c.dt) espnDate=c.dt;}catch(e){} }
-function saveCache(){ try{localStorage.setItem('espnResults',JSON.stringify({t:Date.now(),data:results,ids:espnId,en:ENNAME,ev:matchEvents,dt:espnDate}));}catch(e){} }
+function loadCache(){ try{const c=JSON.parse(localStorage.getItem('espnResults')||'{}'); if(c.data) results=c.data; if(c.ids) espnId=c.ids; if(c.en) ENNAME=c.en; if(c.ev) matchEvents=c.ev; if(c.dt) espnDate=c.dt; if(c.ko) KO=c.ko;}catch(e){} }
+function saveCache(){ try{localStorage.setItem('espnResults',JSON.stringify({t:Date.now(),data:results,ids:espnId,en:ENNAME,ev:matchEvents,dt:espnDate,ko:KO}));}catch(e){} }
 
 /* abreviación FIFA (la que entrega ESPN) -> equipo del fixture */
 const ABBR={MEX:"México",RSA:"Sudáfrica",KOR:"Corea del Sur",CZE:"Rep. Checa",CAN:"Canadá",
@@ -860,19 +961,64 @@ function teamES(c){
   return toES(c.team&&(c.team.displayName||c.team.name));
 }
 
+function koRound(dt){
+  if(!dt)return '';
+  const d=new Date(dt), m=d.getUTCMonth(), day=d.getUTCDate();
+  if(m===5) return '16avos';           // junio 28-30
+  if(m===6 && day<=3) return '16avos'; // julio 1-3
+  if(m===6 && day<=7) return '8vos';
+  if(m===6 && day<=11) return '4tos';
+  if(m===6 && day<=15) return 'Semi';
+  if(m===6 && day===18) return '3er puesto';
+  if(m===6 && day===19) return 'Final';
+  return 'Elim.';
+}
 function parseEvent(ev){
   const comp=ev.competitions&&ev.competitions[0]; if(!comp) return;
   const cs=comp.competitors; if(!cs||cs.length<2) return;
-  const t0=teamES(cs[0]), t1=teamES(cs[1]); if(!t0||!t1) return;
-  if(cs[0].team&&cs[0].team.displayName) ENNAME[t0]=cs[0].team.displayName;
-  if(cs[1].team&&cs[1].team.displayName) ENNAME[t1]=cs[1].team.displayName;
+  const t0=teamES(cs[0]), t1=teamES(cs[1]);
+  if(t0 && cs[0].team&&cs[0].team.displayName) ENNAME[t0]=cs[0].team.displayName;
+  if(t1 && cs[1].team&&cs[1].team.displayName) ENNAME[t1]=cs[1].team.displayName;
   const s0=parseInt(cs[0].score,10), s1=parseInt(cs[1].score,10);
+
+  /* --- Buscar en fase de grupos --- */
   let id,gh,ga;
-  if(PAIR[t0+'|'+t1]){ id=PAIR[t0+'|'+t1]; gh=s0; ga=s1; }
-  else if(PAIR[t1+'|'+t0]){ id=PAIR[t1+'|'+t0]; gh=s1; ga=s0; }
-  else return;
+  if(t0&&t1&&PAIR[t0+'|'+t1]){ id=PAIR[t0+'|'+t1]; gh=s0; ga=s1; }
+  else if(t0&&t1&&PAIR[t1+'|'+t0]){ id=PAIR[t1+'|'+t0]; gh=s1; ga=s0; }
+
+  /* --- Si no es de grupos, es eliminatoria --- */
+  if(id==null){
+    const eid=ev.id; if(!eid) return;
+    const h0=cs[0].team?(cs[0].team.shortDisplayName||cs[0].team.displayName||cs[0].team.name):'';
+    const a0=cs[1].team?(cs[1].team.shortDisplayName||cs[1].team.displayName||cs[1].team.name):'';
+    const home=t0||h0||'Por definir', away=t1||a0||'Por definir';
+    const ven=comp.venue;
+    const city=ven?(ven.address&&ven.address.city?ven.address.city:(ven.fullName||'')):'';
+    const rd=koRound(ev.date);
+    const st=comp.status&&comp.status.type;
+    let phase='next',label='',diff=0;
+    if(st){
+      if(st.state==='in'){phase='live';const sd=(st.shortDetail||'').toLowerCase();const dc=comp.status.displayClock||'';label=sd.includes('half')||st.shortDetail==='HT'?'ENT':(sd.includes('pen')?'PEN':(dc||'LIVE'));}
+      else if(st.state==='post'){phase='done';const sd=(st.shortDetail||'').toLowerCase();label=sd.includes('pen')?'Final · pen':(sd.includes('extra')||sd.includes('aet')?'Final · TE':'Final');}
+      else{phase='next';diff=ev.date?new Date(ev.date).getTime()-Date.now():0;}
+    }
+    /* goles y tarjetas */
+    const idToES2={};
+    if(cs[0].team&&cs[0].team.id!=null) idToES2[cs[0].team.id]=home;
+    if(cs[1].team&&cs[1].team.id!=null) idToES2[cs[1].team.id]=away;
+    const kevs=[];
+    (comp.details||[]).forEach(d=>{let kind;if(d.scoringPlay)kind=d.ownGoal?'og':'goal';else if(d.redCard)kind='rc';else if(d.yellowCard)kind='yc';else return;const ath=d.athletesInvolved&&d.athletesInvolved[0];let who=ath?(ath.displayName||ath.shortName||''):'';if(kind==='og')who+=' (e/c)';else if(kind==='goal'&&d.penaltyKick)who+=' (pen)';kevs.push({kind,min:(d.clock&&d.clock.displayValue)||'',who,team:(d.team&&idToES2[d.team.id])||''});});
+
+    const existing=KO.findIndex(k=>k.eid===eid);
+    const entry={eid,home,away,rd,city,date:ev.date||'',phase,label,diff,
+      gh:isNaN(s0)?null:s0,ga:isNaN(s1)?null:s1,hasScore:phase!=='next',events:kevs};
+    if(existing>=0) KO[existing]=entry; else KO.push(entry);
+    return;
+  }
+
+  /* --- Fase de grupos (igual que antes) --- */
   if(ev.id) espnId[id]=ev.id;
-  if(ev.date) espnDate[id]=ev.date;  // hora oficial (UTC) -> fuente de verdad del horario
+  if(ev.date) espnDate[id]=ev.date;
   // goles y tarjetas (vienen en el propio scoreboard)
   const idToES={};
   if(cs[0].team&&cs[0].team.id!=null) idToES[cs[0].team.id]=t0;
@@ -917,8 +1063,8 @@ function matchInfo(m){
 }
 
 function fmtUTC(d){ return `${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}`; }
-function anyLive(){ for(const k in results){ if(results[k]&&results[k].phase==='live') return true; } return false; }
-function anyTodayUpcoming(){ const t=todayKeyCL(); return M.some(m=>clDate(m).key===t && matchInfo(m).phase==='next'); }
+function anyLive(){ for(const k in results){ if(results[k]&&results[k].phase==='live') return true; } return KO.some(k=>k.phase==='live'); }
+function anyTodayUpcoming(){ const t=todayKeyCL(); const gUp=M.some(m=>clDate(m).key===t && matchInfo(m).phase==='next'); const koUp=KO.some(k=>{try{return koDateKey(k)===t&&k.phase==='next';}catch(e){return false;}}); return gUp||koUp; }
 function updateLive(){ refreshBtn.classList.toggle('live-on',anyLive()); }
 function spinRefresh(){ const ic=refreshBtn.querySelector('.refresh'); ic.classList.add('spin'); setTimeout(()=>ic.classList.remove('spin'),650); }
 
