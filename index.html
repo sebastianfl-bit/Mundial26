@@ -616,6 +616,24 @@ function koDateObj(k){
   return {key:`${get("year")}-${get("month").replace(".","")}-${get("day")}`, dnum:get("day"), dtxt:`${get("weekday")}, ${get("day")} ${get("month").replace(".","")}`};
 }
 function koTime(k){return new Intl.DateTimeFormat("es-CL",{timeZone:"America/Santiago",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(k.date));}
+function koVenue(k){
+  const c=k.city||'';
+  const v=Object.entries(VENUE).find(([key])=>c.toLowerCase().includes(key.toLowerCase())||key.toLowerCase().includes(c.toLowerCase()));
+  if(v) return `<span class="vflag">${v[1][1]}</span><div><b>${v[1][0]}</b><small>${v[0]}, ${v[1][2]}</small></div>`;
+  return c?`<span class="vflag">🏟️</span><div><b>${c}</b></div>`:'';
+}
+function koComment(k){
+  const h=k.home, a=k.away;
+  const TH=T[h], TA=T[a];
+  const rdMap={'16avos':'Dieciseisavos de final. Partido único: el perdedor se va a casa.','8vos':'Octavos de final. Los 16 mejores del mundo se disputan un lugar entre los 8.','4tos':'Cuartos de final. Un paso más hacia la gloria.','Semi':'Semifinal. Se define quién jugará la gran final en Nueva Jersey.','3er puesto':'Tercer puesto. Un último esfuerzo por el bronce.','Final':'La gran final de la Copa del Mundo 2026.'};
+  let ctx=rdMap[k.rd]||'Fase eliminatoria.';
+  if(ELITE.has(h)&&ELITE.has(a)) ctx+=' Choque de gigantes.';
+  else if(TH&&TA&&TH.c==='CON'&&TA.c==='CON') ctx+=' Clásico sudamericano en la eliminatoria.';
+  else if(ELITE.has(h)||ELITE.has(a)) ctx+=' Una de las máximas candidatas se juega la vida.';
+  if(TH) ctx+=` ${h}: ${TH.n}`;
+  if(TA) ctx+=` ${a}: ${TA.n}`;
+  return ctx;
+}
 function koEventsHtml(k){
   if(!k.events||!k.events.length) return '';
   const icon={goal:'\u26bd',og:'\u26bd',yc:'\ud83d\udfe8',rc:'\ud83d\udfe5'};
@@ -664,6 +682,8 @@ function renderKORows(arr){
         <svg class="ar" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div class="m-body"><div class="m-body-in">
+        <div class="venue">${koVenue(k)}</div>
+        <div class="note"><span class="lbl">${k.rd}</span>${koComment(k)}</div>
         <div class="events">${isOpen?koEventsHtml(k):''}</div>
       </div></div>
     </div>`;
