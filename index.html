@@ -544,6 +544,8 @@ function render(){
       if(TAB==="next"&&k.phase==="done") return false;
       if(TAB==="today"&&k.date){try{const dk=koDateKey(k);if(dk!==tKey)return false;}catch(e){return false;}}
       if(CON){const isC=t=>T[t]&&T[t].c==='CON';if(!isC(k.home)&&!isC(k.away))return false;}
+      if(DIS&&!koIsDisney(k))return false;
+      if(FCHV&&!koIsCHV(k))return false;
       if(Q){const s=(k.home+" "+k.away).toLowerCase();if(!s.includes(Q.toLowerCase()))return false;}
       return true;
     });
@@ -634,6 +636,16 @@ function koComment(k){
   if(TA) ctx+=` ${a}: ${TA.n}`;
   return ctx;
 }
+/* CHV/Disney+ en eliminatorias (fuente: Al Aire Libre, jun 2026) */
+const CHV_KO_TEAMS=[['Brasil','Japón'],['Alemania'],['Costa de Marfil','Noruega'],['Francia']];
+function koIsCHV(k){
+  const rd=k.rd, t=[k.home,k.away];
+  if(rd==='16avos') return CHV_KO_TEAMS.some(p=>p.length===2?t.includes(p[0])&&t.includes(p[1]):t.includes(p[0]));
+  return ['Semi','3er puesto','Final'].includes(rd);
+}
+function koIsDisney(k){
+  return ['Semi','3er puesto','Final'].includes(k.rd);
+}
 function koEventsHtml(k){
   if(!k.events||!k.events.length) return '';
   const icon={goal:'\u26bd',og:'\u26bd',yc:'\ud83d\udfe8',rc:'\ud83d\udfe5'};
@@ -677,7 +689,7 @@ function renderKORows(arr){
         <div class="m-mid">
           <div class="team${loH}"><span class="fl">${flH}</span><span class="nm">${k.home}</span>${cmH}${scH}</div>
           <div class="team${loA}"><span class="fl">${flA}</span><span class="nm">${k.away}</span>${cmA}${scA}</div>
-          <div class="m-meta"><span class="ko-pill">${k.rd}</span><span class="sep">\u00b7</span>${k.city||'Por definir'}</div>
+          <div class="m-meta"><span class="ko-pill">${k.rd}</span>${koIsCHV(k)?'<span class="tv-pill chv">CHV</span>':''}${koIsDisney(k)?'<span class="tv-pill">Disney+</span>':''}<span class="sep">\u00b7</span>${k.city||'Por definir'}</div>
         </div>
         <svg class="ar" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
