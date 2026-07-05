@@ -186,6 +186,7 @@
   .bcard.live{border-color:var(--live);box-shadow:0 0 0 1px var(--live)}
   .bcard.done .bk-r.lose{opacity:.42}
   .bcard.tbd{border-style:dashed;background:transparent}
+  .bcard.prop{border-style:dashed;border-color:rgba(255,206,77,.4);background:rgba(255,206,77,.04)}
   .bk-r{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;line-height:1.25}
   .bk-r .fl{font-size:14px;flex:none;width:18px;text-align:center}
   .bk-r .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
@@ -740,7 +741,7 @@ function renderStandings(){
   // Anclas por posición del bracket (orden vertical oficial FIFA 2026)
   const anchorsL=['Alemania','Francia','Sudáfrica','Países Bajos','Portugal','España','Estados Unidos','Bélgica'];
   const anchorsR=['Brasil','Noruega','México','Inglaterra','Argentina','Egipto','Suiza','Ghana'];
-  const anchors=anchorsL.concat(anchorsR); // 16 slots
+  const anchors=anchorsL.concat(anchorsR);
 
   // Asignar cada 16avo real a su slot por ancla
   const r32=(byR['16avos']||[]).slice();
@@ -749,34 +750,83 @@ function renderStandings(){
     const idx=r32.findIndex(m=>m.home===anc||m.away===anc);
     if(idx>=0){ slots16[i]=r32[idx]; r32.splice(idx,1); }
   });
-  // sobrantes a slots vacíos
   r32.forEach(m=>{ const e=slots16.indexOf(null); if(e>=0) slots16[e]=m; });
+
+  // Obtener ganador de un match terminado
+  function winner(m){
+    if(!m||m.phase!=='done'||m.gh==null) return null;
+    return m.gh>m.ga?m.home:(m.ga>m.gh?m.away:null);
+  }
+
+  // Construir placeholder para rondas futuras con ganadores propagados
+  function makePlaceholder(team1,team2,rd){
+    if(!team1&&!team2) return null;
+    return {eid:'ph-'+rd+'-'+Math.random().toString(36).slice(2,6),home:team1||'Por definir',away:team2||'Por definir',
+      rd,city:'',date:'',phase:'next',label:'',diff:0,gh:null,ga:null,hasScore:false,events:[],_placeholder:true};
+  }
 
   function teamsOf(m){ return m?[m.home,m.away].filter(Boolean):[]; }
   function poolOf(slotIdxs){ const s=new Set(); slotIdxs.forEach(i=>teamsOf(slots16[i]).forEach(t=>s.add(t))); return s; }
-  function matchInPool(rd,pool,used){
+
+  // Buscar match real de ESPN para una posición de bracket
+  function findMatch(rd,pool,used){
     const arr=byR[rd]||[];
     for(const m of arr){
       if(used.has(m.eid)) continue;
       const t=teamsOf(m);
-      if(t.length&&t.every(x=>pool.has(x))){ used.add(m.eid); return m; }
+      if(t.length&&t.some(x=>pool.has(x))){ used.add(m.eid); return m; }
     }
     return null;
   }
 
   const used=new Set();
+
   // Octavos: cada uno de 2 slots de 16avos
   const oct=[];
-  for(let j=0;j<8;j++){ oct[j]=matchInPool('8vos',poolOf([j*2,j*2+1]),used); }
-  // Cuartos: cada uno de 4 slots de 16avos
+  for(let j=0;j<8;j++){
+    const real=findMatch('8vos',poolOf([j*2,j*2+1]),used);
+    if(real){ oct[j]=real; }
+    else{
+      const w1=winner(slots16[j*2]), w2=winner(slots16[j*2+1]);
+      oct[j]=(w1||w2)?makePlaceholder(w1,w2,'8vos'):null;
+    }
+  }
+
+  // Cuartos: cada uno de 2 octavos
   const qf=[];
-  for(let j=0;j<4;j++){ qf[j]=matchInPool('4tos',poolOf([j*4,j*4+1,j*4+2,j*4+3]),used); }
-  // Semis: cada una de 8 slots (una mitad)
-  const usedS=new Set();
-  const semiL=matchInPool('Semi',poolOf([0,1,2,3,4,5,6,7]),usedS);
-  const semiR=matchInPool('Semi',poolOf([8,9,10,11,12,13,14,15]),usedS);
+  for(let j=0;j<4;j++){
+    const p=new Set();
+    [oct[j*2],oct[j*2+1]].forEach(m=>teamsOf(m).forEach(t=>p.add(t)));
+    const real=findMatch('4tos',p,used);
+    if(real){ qf[j]=real; }
+    else{
+      const w1=winner(oct[j*2]), w2=winner(oct[j*2+1]);
+      qf[j]=(w1||w2)?makePlaceholder(w1,w2,'4tos'):null;
+    }
+  }
+
+  // Semis: cada una de 2 cuartos
+  const semis=[];
+  for(let j=0;j<2;j++){
+    const p=new Set();
+    [qf[j*2],qf[j*2+1]].forEach(m=>teamsOf(m).forEach(t=>p.add(t)));
+    const real=findMatch('Semi',p,used);
+    if(real){ semis[j]=real; }
+    else{
+      const w1=winner(qf[j*2]), w2=winner(qf[j*2+1]);
+      semis[j]=(w1||w2)?makePlaceholder(w1,w2,'Semi'):null;
+    }
+  }
+
   const fin=(byR['Final']||[])[0]||null;
   const third=(byR['3er puesto']||[])[0]||null;
+
+  // Si no hay final de ESPN pero hay ganadores de semis, propagar
+  let finSlot=fin;
+  if(!finSlot){
+    const w1=winner(semis[0]),w2=winner(semis[1]);
+    if(w1||w2) finSlot=makePlaceholder(w1,w2,'Final');
+  }
 
   function card(k){
     if(!k) return '<div class="bcard tbd"><div class="bk-r"><span class="nm bk-tbd2">Por definir</span></div><div class="bk-r"><span class="nm bk-tbd2">Por definir</span></div></div>';
@@ -788,13 +838,15 @@ function renderStandings(){
     const nH=k.home||'Por definir', nA=k.away||'Por definir';
     const scH=(k.hasScore&&k.gh!=null)?`<span class="sc">${k.gh}</span>`:'';
     const scA=(k.hasScore&&k.ga!=null)?`<span class="sc">${k.ga}</span>`:'';
+    const isPH=k._placeholder;
     let meta='';
     if(k.phase==='live') meta+='<span class="lv">EN VIVO</span>';
     else if(k.phase==='done') meta+='<span class="dn">Final</span>';
-    else if(k.date) meta+=`<span class="hr">${koTime(k)}</span>`;
-    if(koIsCHV(k)) meta+='<span class="tv c">CHV</span>';
-    if(koIsDisney(k)) meta+='<span class="tv d">D+</span>';
-    return `<div class="bcard ${k.phase==='live'?'live':''} ${k.phase==='done'?'done':''}">
+    else if(k.date&&!isPH) meta+=`<span class="hr">${koTime(k)}</span>`;
+    if(!isPH&&koIsCHV(k)) meta+='<span class="tv c">CHV</span>';
+    if(!isPH&&koIsDisney(k)) meta+='<span class="tv d">D+</span>';
+    const cls=[k.phase==='live'?'live':'',k.phase==='done'?'done':'',isPH?'prop':''].filter(Boolean).join(' ');
+    return `<div class="bcard ${cls}">
       <div class="bk-r ${wH}"><span class="fl">${flH}</span><span class="nm">${nH}</span>${scH}</div>
       <div class="bk-r ${wA}"><span class="fl">${flA}</span><span class="nm">${nA}</span>${scA}</div>
       ${meta?`<div class="bk-meta">${meta}</div>`:''}
@@ -804,25 +856,25 @@ function renderStandings(){
     return `<div class="bk-col ${side} ${recv?'recv':''}">${items.map(m=>`<div class="bwrap">${card(m)}</div>`).join('')}</div>`;
   }
 
+  // timestamp
+  const ts=new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());
+
   let html='<div class="bracket bkline"><div class="bk-flex">';
-  // Izquierda: 16avos(8) -> 8vos(4) -> 4tos(2) -> semi(1)
   html+=col(slots16.slice(0,8),'left',false);
   html+=col(oct.slice(0,4),'left',true);
   html+=col(qf.slice(0,2),'left',true);
-  html+=col([semiL],'left',true);
-  // Centro
+  html+=col([semis[0]],'left',true);
   html+='<div class="bk-col mid">';
-  html+='<div class="bk-final"><div class="trophy">\ud83c\udfc6</div><div class="ftitle">CAMPEÓN</div></div>';
-  html+=card(fin);
+  html+='<div class="bk-final"><div class="trophy">\ud83c\udfc6</div><div class="ftitle">CAMPE\u00d3N</div></div>';
+  html+=card(finSlot);
   if(third){ html+='<div class="bk-third">Tercer puesto</div>'+card(third); }
   html+='</div>';
-  // Derecha: semi(1) -> 4tos(2) -> 8vos(4) -> 16avos(8)
-  html+=col([semiR],'right',true);
+  html+=col([semis[1]],'right',true);
   html+=col(qf.slice(2,4),'right',true);
   html+=col(oct.slice(4,8),'right',true);
   html+=col(slots16.slice(8,16),'right',false);
   html+='</div>';
-  html+='<div class="bk-note2">Desliza horizontalmente para ver el cuadro completo. Los cruces se posicionan por equipos y se actualizan automáticamente desde ESPN.</div>';
+  html+=`<div class="bk-note2">Actualizado ${ts} · Desliza horizontalmente para ver el cuadro completo. Los ganadores avanzan autom\u00e1ticamente.</div>`;
   html+='</div>';
   list.innerHTML=html;
 }
@@ -998,6 +1050,7 @@ window.selectLineup=function(v){ lineupMatchId=+v; renderLineups(); };
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
   t.classList.add("active"); TAB=t.dataset.tab; render();
+  if(TAB==='tables'||TAB==='ko') fetchScores({full:true}).then(scheduleScores);
 });
 document.getElementById("q").oninput=e=>{Q=e.target.value;render();};
 document.getElementById("grp").onchange=e=>{GRP=e.target.value;render();};
