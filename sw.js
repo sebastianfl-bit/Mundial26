@@ -1,5 +1,5 @@
 /* Service Worker · Mundial 2026 */
-const VERSION = 'm26-v18';
+const VERSION = 'm26-v20';
 const CORE = `core-${VERSION}`;
 const RUNTIME = `rt-${VERSION}`;
 
